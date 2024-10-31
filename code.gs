@@ -2,33 +2,59 @@ function doPost(e) {
   let sheetName = "Sheet1";
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
   if (!sheet) {
-    return ContentService.createTextOutput("Error: Sheet not found");
+    return ContentService.createTextOutput(
+      JSON.stringify({ error: "Sheet not found" })
+    ).setMimeType(ContentService.MimeType.JSON);
   }
 
-  let newRow = sheet.getLastRow() + 1;
-  let rowData = [];
+  let action = e.parameter.action;
+  let response = {};
 
-  rowData.push(new Date()); // Timestamp
-  rowData.push(e.parameter.email); // Email address
+  switch (action) {
+    case "create":
+      let newRow = sheet.getLastRow() + 1;
+      sheet
+        .getRange(newRow, 1, 1, 2)
+        .setValues([[new Date(), e.parameter.email]]);
+      response = { success: true, message: "Subscriber added successfully" };
+      break;
 
-  sheet.getRange(newRow, 1, 1, rowData.length).setValues([rowData]);
+    case "update":
+      let rowToUpdate = parseInt(e.parameter.row);
+      let newEmail = e.parameter.email;
+      sheet.getRange(rowToUpdate, 2).setValue(newEmail);
+      response = { success: true, message: "Subscriber updated successfully" };
+      break;
 
-  return ContentService.createTextOutput("Thank you for subscribing!");
+    case "delete":
+      let rowToDelete = parseInt(e.parameter.row);
+      sheet.deleteRow(rowToDelete);
+      response = { success: true, message: "Subscriber deleted successfully" };
+      break;
+
+    default:
+      response = { error: "Invalid action" };
+  }
+
+  return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(
+    ContentService.MimeType.JSON
+  );
 }
-function doPost(e) {
+
+function doGet() {
   let sheetName = "Sheet1";
   let sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
   if (!sheet) {
-    return ContentService.createTextOutput("Error: Sheet not found");
+    return ContentService.createTextOutput(
+      JSON.stringify({ error: "Sheet not found" })
+    ).setMimeType(ContentService.MimeType.JSON);
   }
 
-  let newRow = sheet.getLastRow() + 1;
-  let rowData = [];
-
-  rowData.push(new Date()); // Timestamp
-  rowData.push(e.parameter.email); // Email address
-
-  sheet.getRange(newRow, 1, 1, rowData.length).setValues([rowData]);
-
-  return ContentService.createTextOutput("Thank you for subscribing!");
+  let data = sheet.getDataRange().getValues();
+  return ContentService.createTextOutput(
+    JSON.stringify({
+      success: true,
+      data: data,
+    })
+  ).setMimeType(ContentService.MimeType.JSON);
 }
